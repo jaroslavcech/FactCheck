@@ -1,0 +1,38 @@
+@using FactCheck1.Data
+@using FactCheck1.Services
+@using FactCheck1.Components
+@inject SharedArticles SharedArticles
+@inject DbService DbService
+@page "/CzStat"
+<Tabs RenderMode="TabsRenderMode.LazyLoad" SelectedTab="tab1">
+    <Items>
+        <Tab Name="tab1">Nepravdy</Tab>
+        <Tab Name="tab2">Hashtagy</Tab>
+    </Items>
+    <Content>
+        <TabPanel Name="tab1">
+            <ArticleChart/>
+            <ArticleNumber/>
+        </TabPanel>
+        <TabPanel Name="tab2">
+            <HashChart />
+        </TabPanel>
+    </Content>
+</Tabs>
+
+@code {
+
+    private async Task<List<Article>> ReloadAsync()
+    {
+        var p = await DbService.GetArticles("CZ");
+        return p;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var articles = await ReloadAsync();
+        SharedArticles.SetArticles(articles);
+        await base.OnInitializedAsync();
+    }
+
+}

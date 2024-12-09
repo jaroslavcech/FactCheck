@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Blazorise" Version="1.7.0" />
+      <PackageReference Include="Blazorise.Bootstrap" Version="1.7.0" />
+      <PackageReference Include="Blazorise.Components" Version="1.7.0" />
+      <PackageReference Include="Blazorise.DataGrid" Version="1.7.0" />
+      <PackageReference Include="Blazorise.Icons.FontAwesome" Version="1.7.0" />
+      <PackageReference Include="Markdig" Version="0.38.0" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+      <PackageReference Include="Plotly.Blazor" Version="5.3.0" />
+      <PackageReference Include="Quartz" Version="3.7.0" />
+      <PackageReference Include="Quartz.Extensions.DependencyInjection" Version="3.7.0" />
+      <PackageReference Include="Quartz.Extensions.Hosting" Version="3.7.0" />
+      <PackageReference Include="Serilog" Version="3.0.1" />
+      <PackageReference Include="Serilog.AspNetCore" Version="7.0.0" />
+      <PackageReference Include="Serilog.Settings.Configuration" Version="7.0.1" />
+      <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+      <PackageReference Include="System.ServiceModel.Syndication" Version="8.0.0" />
+    </ItemGroup>
+
+</Project>

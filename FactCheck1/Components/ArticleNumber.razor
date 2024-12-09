@@ -1,0 +1,144 @@
+@using Microsoft.JSInterop;
+@using FactCheck1.Data;
+@using FactCheck1.Services;
+@using Config = Plotly.Blazor.Config
+@using Layout = Plotly.Blazor.Layout;
+@using Plotly.Blazor.LayoutLib
+@inject SharedArticles SharedArticles
+@implements IDisposable
+
+<PlotlyChart style="height: 60vh; min-height: 350px" Data="@data"  @bind-Config="config" @bind-Layout="layout" @ref="chart"></PlotlyChart>
+@code {
+    private List<Article> Articles { get; set; }
+    private Dictionary<string, Dictionary<string, int>>? Dates { get; set; }
+    
+    private PlotlyChart chart;
+    private Config config;
+    private Layout layout;
+    private IList<ITrace> data;
+
+    private object[] GetData(string newspaperId)
+    {
+        var rv = new List<object>();
+        foreach (var d in Dates.Keys)
+        {
+            var dd = Dates[d];
+            var nn = dd[newspaperId];
+            rv.Add(nn);
+        }
+        return rv.ToArray();
+    }
+    
+
+    private void OnArticleSet()
+    {
+        config = new Config
+        {
+            Responsive = true
+        };
+
+        layout = new Layout
+        {
+            Title = new Title
+            {
+                Text = "Počet článků v čase"
+            },
+            PaperBgColor = "#f0f0f0",
+            PlotBgColor = "#f0f0f0",
+            Font = new Font
+            {
+                Color = "#000000"
+            },
+            BarMode = BarModeEnum.Group,
+            YAxis = new List<YAxis>
+            {
+                new()
+                {
+                    Title = new Plotly.Blazor.LayoutLib.YAxisLib.Title
+                    {
+                        Text = "Počet článků / den"
+                    }
+                }
+            }
+            
+        };
+        if (Dates == null)
+        {
+            return;
+        }
+        var xAxe = Dates.Keys.Order().ToList<object>();
+        var newspapers = Dates[Dates.Keys.Last()].Keys.ToList<string>();
+
+        data = new List<ITrace>();
+        foreach (var d in newspapers)
+        {
+            var b = new Plotly.Blazor.Traces.Bar
+            {
+                X = xAxe,
+                Y = GetData(d),
+                Name = d,
+                
+            };
+            data.Add(b);
+        }
+        
+    }
+
+    protected override void OnInitialized()
+    {
+        
+        base.OnInitialized();
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            ArticlesChanged();
+            SharedArticles.OnChange += ArticlesChanged;
+            await InvokeAsync(StateHasChanged);
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+        SharedArticles.OnChange -= ArticlesChanged;
+    }
+
+    private void ArticlesChanged()
+    {
+        Articles = SharedArticles.Articles;
+        ConstructDates(Articles);
+        OnArticleSet();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ConstructDates(List<Article>? p)
+    {
+        if (p == null)
+        {
+            return;
+        }
+        Dates = new Dictionary<string, Dictionary<string, int>>();
+        var days = p.Select(x => x.Date.Date).Distinct()
+            .OrderBy(x => x).Select(x => x.ToString("yyyy-MM-dd")).ToArray();
+        var newspapers = p.Select(x => x.Newspaper).Distinct().Order().ToArray();
+        foreach (var dd in days)
+        {
+            var daily = new Dictionary<string, int>();
+            foreach (var nn in newspapers)
+            {
+                var tot = 0;
+                if (p.Where(x => x.Date.Date.ToString("yyyy-MM-dd") == dd && x.Newspaper == nn).Count() > 0)
+                {
+                    tot = p.Where(x => x.Date.Date.ToString("yyyy-MM-dd") == dd && x.Newspaper == nn).Select(x => x.Errors).ToArray().Length;
+                }
+                daily.Add(nn, tot);
+            }
+            Dates.Add(dd, daily);
+        }
+    }
+
+}

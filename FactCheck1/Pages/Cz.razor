@@ -1,0 +1,26 @@
+@using FactCheck1.Components
+@using FactCheck1.Data
+@using FactCheck1.Services
+@inject SharedArticles SharedArticles
+@inject DbService DbService
+
+@page "/Cz"
+
+<ArticleGrid />
+
+@code {
+    private List<Article>? Articles { get; set; }
+    private async Task<List<Article>> ReloadAsync()
+    {
+        var p = await DbService.GetArticles("CZ");
+        return p;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Articles = await ReloadAsync();
+        SharedArticles.SetArticles(Articles);
+        await base.OnInitializedAsync();
+    }
+
+}

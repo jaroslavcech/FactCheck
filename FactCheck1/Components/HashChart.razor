@@ -1,0 +1,217 @@
+@using Microsoft.JSInterop;
+@using FactCheck1.Data;
+@using FactCheck1.Services;
+@using Config = Plotly.Blazor.Config
+@using Layout = Plotly.Blazor.Layout;
+@using Plotly.Blazor.LayoutLib
+@using Plotly.Blazor.Traces.IsoSurfaceLib.CapsLib
+@inject SharedArticles SharedArticles
+@implements IDisposable
+
+<Layout >
+    <LayoutHeader Fixed>
+
+    </LayoutHeader>
+    <Layout Sider>
+        <LayoutSider>
+            <LayoutSiderContent Background="Background.Default">
+                <div style="background-color: lightsteelblue">
+                    <div style="margin: 6px 6px 6px 6px ">
+                        <Fields >
+                            <Field Class="mt-2">
+                                <FieldLabel>Zvolte interval</FieldLabel>
+                                <FieldBody>
+                                    <DatePicker @bind-Dates="selectedDates" TValue="DateTime?"
+                                                InputMode="DateInputMode.Date" SelectionMode="DateInputSelectionMode.Range"
+                                                Inline="true"/>
+                                </FieldBody>
+                            </Field>
+                            <Field Class="mt-2">
+                                <FieldBody>
+                                    <Button Clicked="OnClicked" Color="Color.Success" style="width: 100%">Načti data</Button>
+                                </FieldBody>
+                            </Field>
+                            <Field Class="mt-2">
+                                <FieldBody>
+                                    <Button Clicked="OnClickedReset" Color="Color.Danger" style="width: 100%">Reset data</Button>
+                                </FieldBody>
+                            </Field>
+                        </Fields>
+                    </div>
+                </div>
+            </LayoutSiderContent>
+        </LayoutSider>
+        <Layout>
+            <LayoutContent>
+                <div style="margin: 6px 6px 6px 6px ">
+                    <DataGrid
+                        TItem="HashCount"
+                        Data="@HashCounts"
+                        TotalItems="@totalLines"
+                        PageSize="30"
+                        ShowPager="true"
+                        ShowPageSizes="true"
+                        PagerPosition="DataGridPagerPosition.TopAndBottom"
+                        PagerOptions="new() { ButtonSize = Size.Small }"
+                        Responsive="true">
+                        <DataGridColumns>
+                            <DataGridColumn Field="@nameof(HashCount.Value)" Caption="Hashtag" Sortable="false"></DataGridColumn>
+                            <DataGridColumn Field="@nameof(HashCount.p)" Caption="All" Sortable="false"></DataGridColumn>
+                            <DataGridColumn Field="@nameof(HashCount.idnes)" Caption="Idnes" Sortable="false"></DataGridColumn>
+                            <DataGridColumn Field="@nameof(HashCount.ct)" Caption="CT24" Sortable="false"></DataGridColumn>
+                            <DataGridColumn Field="@nameof(HashCount.forum)" Caption="Forum24" Sortable="false"></DataGridColumn>
+                            <DataGridColumn Field="@nameof(HashCount.e15)" Caption="E15" Sortable="false"></DataGridColumn>
+                        </DataGridColumns>
+                    </DataGrid>
+                </div>
+            </LayoutContent>
+        </Layout>
+    </Layout>
+</Layout>
+
+
+@code {
+    IReadOnlyList<DateTime?> selectedDates;
+    IReadOnlyList<DateTime?> originalDates;
+    private List<Article> Articles { get; set; }
+    private List<HashCount> HashCounts { get; set; }
+    private Dictionary<string, Dictionary<string, int>>? Dates { get; set; }
+    private int totalLines;
+    private PlotlyChart chart;
+    private Config config;
+    private Layout layout;
+    private IList<ITrace> data;
+
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            ArticlesChanged();
+            SharedArticles.OnChange += ArticlesChanged;
+            await InvokeAsync(StateHasChanged);
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public void Dispose()
+    {
+        SharedArticles.OnChange -= ArticlesChanged;
+    }
+
+    private void ArticlesChanged()
+    {
+        Articles = SharedArticles.Articles;
+        ConstructDates(Articles);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ConstructDates(List<Article>? p)
+    {
+        if (p == null)
+        {
+            return;
+        }
+        selectedDates = new List<DateTime?>();
+    /*  Dates = Articles
+            .SelectMany(article => article.Hashtags
+                .Where(hashtag => hashtag.Value != "notprocessed")
+                .Select(hashtag => new
+                {
+                    Datum = article.Date.Date.ToString("yyyy-MM-dd"), // Předpokládáme, že chcete Datum jako string
+                    TrimmedValue = hashtag.Value.ToLower().Trim()
+                }))
+            .GroupBy(x => x.Datum)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .GroupBy(x => x.TrimmedValue)
+                    .Where(g => g.Count() > 2)
+                    .ToDictionary(
+                        subgroup => subgroup.Key,
+                        subgroup => subgroup.Count()
+                    )
+            );
+            */
+        Dates = Articles
+            .SelectMany(article => article.Hashtags
+                .Where(hashtag => hashtag.Value != "notprocessed")
+                .Select(hashtag => new
+                {
+                    Datum = article.Date.Date.ToString("yyyy-MM-dd"), // Předpokládáme, že chcete Datum jako string
+                    TrimmedValue = hashtag.Value.ToLower().Trim()
+                }))
+            .GroupBy(x => x.Datum)
+            .ToDictionary(
+                group => group.Key,
+                group => group
+                    .GroupBy(x => x.TrimmedValue)
+                    .Where(g => g.Count() > 2)
+                    .OrderByDescending(g => g.Count())
+                    .ToDictionary(
+                        subgroup => subgroup.Key,
+                        subgroup => subgroup.Count()
+                    )
+            );
+        List<DateTime?> dt = new List<DateTime?>();
+        dt.Add(DateTime.Parse(Dates.Keys.Last()));
+        dt.Add(DateTime.Parse(Dates.Keys.First()));
+        selectedDates = dt;
+        originalDates = dt;
+
+        var startDate = new DateTime(2023, 10, 1);
+        var endDate = new DateTime(2023, 12, 1);
+        HashCounts = Articles
+            .Where(article => article.Date >= startDate && article.Date <= endDate)
+            .SelectMany(article => article.Hashtags, (article, hashtag) => new { article, hashtag })
+            .Where(x => x.hashtag.Value != "notprocessed" && x.hashtag.ArticleId == x.article.Id)
+            .GroupBy(x => x.hashtag.Value.Trim().ToLower())
+            .Select(g => new HashCount
+            {
+                Value = g.Key,
+                p = g.Count(),
+                idnes = g.Count(x => x.article.Newspaper == "iDnes"),
+                forum = g.Count(x => x.article.Newspaper == "Forum24"),
+                ct = g.Count(x => x.article.Newspaper == "CT24"),
+                e15 = g.Count(x => x.article.Newspaper == "E15")
+            })
+            .OrderByDescending(x => x.p).ToList();
+        totalLines = HashCounts.Count;
+    }
+
+    private Task OnClickedReset()
+    {
+        selectedDates = originalDates;
+        return OnClicked();
+    }
+    private Task OnClicked()
+    {
+        var startDate = selectedDates.First();
+        var endDate = selectedDates.Last();
+        HashCounts = Articles
+            .Where(article => article.Date >= startDate && article.Date <= endDate)
+            .SelectMany(article => article.Hashtags, (article, hashtag) => new { article, hashtag })
+            .Where(x => x.hashtag.Value != "notprocessed" && x.hashtag.ArticleId == x.article.Id)
+            .GroupBy(x => x.hashtag.Value.Trim().ToLower())
+            .Select(g => new HashCount
+            {
+                Value = g.Key,
+                p = g.Count(),
+                idnes = g.Count(x => x.article.Newspaper == "iDnes"),
+                forum = g.Count(x => x.article.Newspaper == "Forum24"),
+                ct = g.Count(x => x.article.Newspaper == "CT24"),
+                e15 = g.Count(x => x.article.Newspaper == "E15")
+            })
+            .OrderByDescending(x => x.p).ToList();
+        totalLines = HashCounts.Count;
+        InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
+
+}

@@ -1,0 +1,73 @@
+﻿@page "/"
+
+<PageTitle>Fake news – jak nám může pomoci AI?</PageTitle>
+<table>
+    <tbody>
+    <tr>
+        <td>
+            <table>
+                <tbody>
+                <tr>
+                    <td>
+                        <img src="pics/cyberpunknews.jpg" style="width: 180px; height: 180px" alt="">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img src="pics/lecture_for_ai_programmers.jpg" style="width: 180px; height: 180px" alt="">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img src="pics/dali_news_check.jpg" style="width: 180px; height: 180px" alt="">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img src="pics/newsrobot.jpg" style="width: 180px; height: 180px" alt="">
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </td>
+        <td style="width: 24px"></td>
+        <td>
+            <p>
+                Takhle nějak by v budoucnu mohl automatický systém pro odhalování nepravdivých zpráv vypadat: <br>
+                Princip je jednoduchý: vezmu novinový článek a řeknu AI (v tomto případě Google Bard), aby v článku našel nepravdivé informace, <br>
+                vysvětlil, proč jsou nepravdivé a udal počet nepravdivých informací nalezených v článku.
+                Má to ještě spoustu chyb:<br>
+                • články čte z webových stránek a neumí dobře rozlišit vlastní článek a “okolí” – např. názvy dalších článků<br>
+                • někdy si “vymýšlí” = hodnotí věci, které v článku nejsou<br>
+                • jako nepravdu bere I tvrzení, které někdo označí v textu jako citaci nepravdy u jiných: např. “dříve se věřilo, že je země placatá”<br>
+                • někdy uvede jako nepravdu I tvrzení, které nelze ověřit – např. “Jan Novák tvrdí, že za 20 let vyhraje Wimbledon”<br>
+                • Občas odmítne článek hodnotit s tím, že je jen jazykový model a nemá na to znalosti<br>
+                • Je "liberárně demokratický" = viz. např. politické komentáře. Nekritizuji, konstatuji. Není nestranný <br>
+                • Nějaké další chyby se jistě objeví dále.<br>
+                Nicméně slouží jako “nestranný rozhodčí” (I když o konkrétním nastavení modelu Bard můžeme vést dalekosáhlé diskuze) a články hodnotí “padni komu padni”<br>
+                A dle tohoto “rozhodčího” a dostatečného počtu článků lze již dělat nějaké závěry – viz hodnotící grafy dále.<br>
+            </p>
+            <p>
+                <b>Proč Bard</b><br>
+                Tento jazykový model jsem zvolil proto, že jako jediný umí pracovat s aktuálními daty. <br>
+                Např. ChatGPT má “horizont událostí” cca na konci roku 2022 – čili pro hodnocení většiny článků popisujících aktuální dění je nepoužitelný
+            </p>
+            <p>
+                <b>Jak to funguje</b><br>
+                Z vybraných RSS kanálů se ukládají nové články do databáze a z té je postupně vybírá a hodnotí Bard. <br>
+                Bard hodnotí text, kde je zkombinován titulek článku, popis z RSS kanálu a vlastní článek z webu. <br>
+                Tento postup byl zvolen neb někdy je podstatnou částí článku video a to ještě Bard evaluovat neumí :)
+            </p>
+            <p>
+                <b>Co dál?</b><br>
+                Uvidíme ... Chtěl bych přidat i zprávy zahraniční - zkoušel jsem CNN a BBC, ale velmi překvapivě byly výsledky takřka nepoužitelné. <br>
+                Budu zkoušet dále - zkusím německy psané tituly a uvidíme ...<br>
+                Zkusím také články pomocí AI zařadit do kategorií a zkoumat, kde se, ve kterých kategoriích se nejvíce "lže"...
+            </p>
+            <p>
+                Pokud máte nějaké nápady a připomínky - <a href="mailto:jaro@nowapp.cz?subject=AI fact check">napište mi!</a>
+            </p>
+        </td>
+    </tr>
+    </tbody>
+</table>

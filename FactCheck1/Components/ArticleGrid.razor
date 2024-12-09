@@ -1,0 +1,145 @@
+@using FactCheck1.Data
+@using FactCheck1.Services
+@inject SharedArticles SharedArticles
+@inject DbService DbService
+<p>
+    Kliknutím na <a href="#">modře podtržený nadpis</a> přejdete na původní článek.<br>
+    Kliknutím <b>kamkoliv jinam na řádek</b> se rozbalí Bardovo vysvětlení chyb, které Bard nalezl.<br>
+    <b>Barva řádku</b> označuje počet nalezených chyb v článku (sloupec Score)
+</p>
+<DataGrid TItem="Article"
+          Data="@Articles"
+          RowStyling="OnRowStyling"
+          DetailRowTrigger="@((e) => e.Item.Bard?.Length > 0)"
+          DetailRowStartsVisible="false"
+          TotalItems="@totalLines"
+          PageSize="30"
+          ShowPager="true"
+          ShowPageSizes="true"
+          PagerPosition="DataGridPagerPosition.TopAndBottom"
+          PagerOptions="new(){ ButtonSize=Size.Small }"
+          Responsive="true"
+          SelectedRow="@selectedArticle">
+    <DataGridColumns>
+        <DataGridDateColumn Field="@nameof(Article.Date)" Caption="Date" Sortable="true"></DataGridDateColumn>
+        <DataGridColumn Field="@nameof(Article.Newspaper)" Caption="Source" Sortable="true"></DataGridColumn>
+        <DataGridColumn Field="@nameof(Article.Title)" Caption="Title" Sortable="false">
+            <DisplayTemplate>
+                <a href="@((context as Article)?.Url)" target="_blank">@((context as Article)?.Title)</a>
+            </DisplayTemplate>
+        </DataGridColumn>
+        <DataGridColumn Field="@nameof(Article.Errors)" Caption="Score" Sortable="true"></DataGridColumn>
+    </DataGridColumns>
+    <DetailRowTemplate>
+        <label>
+            @(RawHtml((Markdig.Markdown.ToHtml((context as Article).Bard))))
+        </label>
+    </DetailRowTemplate>
+    
+    <NextPageButtonTemplate>
+        <Icon Name="IconName.StepForward"/>
+    </NextPageButtonTemplate>
+    <PreviousPageButtonTemplate>
+        <Icon Name="IconName.StepBackward"/>
+    </PreviousPageButtonTemplate>
+    <LastPageButtonTemplate>
+        <Icon Name="IconName.Forward"/>
+    </LastPageButtonTemplate>
+    <FirstPageButtonTemplate>
+        <Icon Name="IconName.Backward"/>
+    </FirstPageButtonTemplate>
+    <ItemsPerPageTemplate></ItemsPerPageTemplate>
+</DataGrid>
+
+@code {
+    public List<Article> Articles { get; set; }
+
+
+    private Article selectedArticle;
+    private int totalLines;
+
+    private async Task<List<Article>> ReloadAsync()
+    {
+        var p = await DbService.GetArticles("CZ");
+        return p;
+    }
+
+    private MarkupString RawHtml(string html)
+    {
+        var m = new MarkupString(html);
+        return m;
+    }
+
+    private void OnRowStyling(Article line, DataGridRowStyling styling)
+    {
+        switch (line.Errors)
+        {
+            case 0:
+                var st = "background: white;";
+                if (line.Bard.Length > 0)
+                {
+                    st = "background: #F4F482;";
+                    if (!line.Bard.Contains("<bad"))
+                    {
+                        st = "background: #F4F482;";
+                    }
+                }
+                styling.Style = st;
+                break;
+            case 1:
+    //                styling.Background = Background.Light;
+                styling.Style = "background: #F4EEA9;";
+                break;
+            case 2:
+                styling.Style = "background: #F7EDF0;";
+                break;
+            case 3:
+                styling.Style = "background: #F4CBC6;";
+                break;
+            case 4:
+                styling.Style = "background: #F4AFAB;";
+                break;
+            default:
+                styling.Style = "background: red; color: white;";
+                break;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Articles = await ReloadAsync();
+        await base.OnInitializedAsync();
+    }
+
+
+    private void ArticlesChanged()
+    {
+        Articles = SharedArticles.Articles;
+        totalLines = Articles.Count;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnReadData(DataGridReadDataEventArgs<Article> e)
+    {
+        if (!e.CancellationToken.IsCancellationRequested)
+        {
+            List<Article> response = null;
+
+    // this can be call to anything, in this case we're calling a fictional api
+    //var response = await Http.GetJsonAsync<Employee[]>( $"some-api/employees?page={e.Page}&pageSize={e.PageSize}" );
+            if (e.ReadDataMode is DataGridReadDataMode.Virtualize)
+                response = (await ReloadAsync()).Skip(e.VirtualizeOffset).Take(e.VirtualizeCount).ToList();
+            else if (e.ReadDataMode is DataGridReadDataMode.Paging)
+                response = (await ReloadAsync()).Skip((e.Page - 1) * e.PageSize).Take(e.PageSize).ToList();
+            else
+                throw new Exception("Unhandled ReadDataMode");
+
+            if (!e.CancellationToken.IsCancellationRequested)
+            {
+                totalLines = (await ReloadAsync()).Count;
+                Articles = new List<Article>(response); // an actual data for the current page
+            }
+        }
+    }
+
+}
